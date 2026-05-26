@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Cloud-Native Platform</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f4f6f9; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1 { color: #1e293b; margin-top: 0; }
+        .status { padding: 5px 10px; border-radius: 4px; font-weight: bold; background: #fee2e2; color: #ef4444; }
+        .status.online { background: #dcfce7; color: #16a34a; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #f8fafc; padding: 12px; margin: 8px 0; border-left: 4px solid #3b82f6; border-radius: 0 4px 4px 0; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Secure Cloud-Native CI/CD Platform Dashboard</h1>
+        <p>System Status: <span class="status" id="health">Connecting...</span></p>
+    </div>
+    <div class="card">
+        <h3>Deployment Verification Checklist:</h3>
+        <ul id="items"></ul>
+    </div>
+
+    <script>
+        // Dynamically detects if backend is hosted alongside or on port 5000
+        const backendUrl = window.location.origin.replace(':3000', ':5000') || 'http://localhost:5000';
+        
+        fetch(`${backendUrl}/api/health`)
+            .then(res => res.json())
+            .then(data => { 
+                const healthEl = document.getElementById('health');
+                healthEl.innerText = `Active - ${data.backend} & DB ${data.database}`; 
+                healthEl.className = "status online";
+            })
+            .catch(err => { 
+                document.getElementById('health').innerText = 'Backend Offline'; 
+            });
+
+        fetch(`${backendUrl}/api/items`)
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('items');
+                data.forEach(item => {
+                    let li = document.createElement('li');
+                    li.textContent = item.name;
+                    list.appendChild(li);
+                });
+            });
+    </script>
+</body>
+</html>
