@@ -1,54 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevOps Cloud-Native Platform</title>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f4f6f9; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h1 { color: #1e293b; margin-top: 0; }
-        .status { padding: 5px 10px; border-radius: 4px; font-weight: bold; background: #fee2e2; color: #ef4444; }
-        .status.online { background: #dcfce7; color: #16a34a; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #f8fafc; padding: 12px; margin: 8px 0; border-left: 4px solid #3b82f6; border-radius: 0 4px 4px 0; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DevOps Task Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; padding: 1.5rem 2rem; border-bottom: 1px solid #334155; }
+    header h1 { font-size: 1.5rem; color: #38bdf8; }
+    header p { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
+    .container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .card h2 { font-size: 1rem; color: #94a3b8; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+    .input-row { display: flex; gap: 10px; }
+    input[type="text"] { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.95rem; }
+    input[type="text"]:focus { outline: none; border-color: #38bdf8; }
+    button { padding: 10px 20px; border-radius: 8px; border: none; background: #38bdf8; color: #0f172a; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    button:hover { background: #7dd3fc; }
+    .task-list { list-style: none; margin-top: 1rem; }
+    .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #0f172a; border-radius: 8px; margin-bottom: 8px; border: 1px solid #334155; }
+    .task-title { font-size: 0.95rem; }
+    .task-date { font-size: 0.75rem; color: #64748b; margin-top: 3px; }
+    .delete-btn { background: #ef4444; color: white; padding: 5px 12px; font-size: 0.8rem; border-radius: 6px; font-weight: 500; }
+    .delete-btn:hover { background: #dc2626; }
+    .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; background: #164e63; color: #38bdf8; margin-left: 8px; }
+    .health { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; }
+    .dot.red { background: #ef4444; }
+    #empty { color: #475569; text-align: center; padding: 2rem; font-size: 0.9rem; }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>DevOps Task Manager</h1>
+    <p>3-Tier Application — Frontend / Backend / MongoDB</p>
+  </header>
+
+  <div class="container">
     <div class="card">
-        <h1>Secure Cloud-Native CI/CD Platform Dashboard</h1>
-        <p>System Status: <span class="status" id="health">Connecting...</span></p>
-    </div>
-    <div class="card">
-        <h3>Deployment Verification Checklist:</h3>
-        <ul id="items"></ul>
+      <h2>Backend Health</h2>
+      <div class="health">
+        <div class="dot" id="health-dot"></div>
+        <span id="health-msg">Checking...</span>
+      </div>
     </div>
 
-    <script>
-        // Dynamically detects if backend is hosted alongside or on port 5000
-        const backendUrl = window.location.origin.replace(':3000', ':5000') || 'http://localhost:5000';
-        
-        fetch(`${backendUrl}/api/health`)
-            .then(res => res.json())
-            .then(data => { 
-                const healthEl = document.getElementById('health');
-                healthEl.innerText = `Active - ${data.backend} & DB ${data.database}`; 
-                healthEl.className = "status online";
-            })
-            .catch(err => { 
-                document.getElementById('health').innerText = 'Backend Offline'; 
-            });
+    <div class="card">
+      <h2>Add Task</h2>
+      <div class="input-row">
+        <input type="text" id="task-input" placeholder="Enter task title..." />
+        <button onclick="addTask()">Add</button>
+      </div>
+    </div>
 
-        fetch(`${backendUrl}/api/items`)
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById('items');
-                data.forEach(item => {
-                    let li = document.createElement('li');
-                    li.textContent = item.name;
-                    list.appendChild(li);
-                });
-            });
-    </script>
+    <div class="card">
+      <h2>Tasks <span class="badge" id="task-count">0</span></h2>
+      <ul class="task-list" id="task-list">
+        <li id="empty">No tasks yet. Add one above.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:3000/api'
+      : '/api';
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(API + '/health');
+        const data = await res.json();
+        document.getElementById('health-dot').className = 'dot';
+        document.getElementById('health-msg').textContent = data.message + ' — ' + new Date(data.timestamp).toLocaleTimeString();
+      } catch {
+        document.getElementById('health-dot').className = 'dot red';
+        document.getElementById('health-msg').textContent = 'Backend unreachable';
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(API + '/tasks');
+        const tasks = await res.json();
+        const list = document.getElementById('task-list');
+        document.getElementById('task-count').textContent = tasks.length;
+        if (tasks.length === 0) {
+          list.innerHTML = '<li id="empty">No tasks yet. Add one above.</li>';
+          return;
+        }
+        list.innerHTML = tasks.map(t => `
+          <li class="task-item">
+            <div>
+              <div class="task-title">${t.title}</div>
+              <div class="task-date">${new Date(t.createdAt).toLocaleString()}</div>
+            </div>
+            <button class="delete-btn" onclick="deleteTask('${t._id}')">Delete</button>
+          </li>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function addTask() {
+      const input = document.getElementById('task-input');
+      const title = input.value.trim();
+      if (!title) return;
+      await fetch(API + '/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      input.value = '';
+      loadTasks();
+    }
+
+    async function deleteTask(id) {
+      await fetch(API + '/tasks/' + id, { method: 'DELETE' });
+      loadTasks();
+    }
+
+    document.getElementById('task-input').addEventListener('keypress', e => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    checkHealth();
+    loadTasks();
+    setInterval(checkHealth, 30000);
+  </script>
 </body>
 </html>
