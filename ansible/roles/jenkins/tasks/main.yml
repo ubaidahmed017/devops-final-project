@@ -1,0 +1,58 @@
+---
+- name: Install Java (Jenkins dependency)
+  apt:
+    name: openjdk-17-jdk
+    state: present
+    update_cache: yes
+
+- name: Remove broken Jenkins apt repo if exists
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/jenkins.list
+    - /usr/share/keyrings/jenkins-keyring.gpg
+    - /usr/share/keyrings/jenkins-keyring.asc
+
+- name: Create Jenkins data directory
+  file:
+    path: /opt/jenkins
+    state: directory
+    mode: '0777'
+
+- name: Pull Jenkins Docker image
+  community.docker.docker_image:
+    name: jenkins/jenkins
+    tag: lts
+    source: pull
+
+- name: Run Jenkins container
+  community.docker.docker_container:
+    name: jenkins
+    image: jenkins/jenkins:lts
+    state: started
+    restart_policy: always
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /opt/jenkins:/var/jenkins_home
+    env:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true"
+
+- name: Wait for Jenkins to start
+  wait_for:
+    port: 8080
+    delay: 15
+    timeout: 120
+
+- name: Get Jenkins initial admin password
+  shell: cat /opt/jenkins/secrets/initialAdminPassword
+  register: jenkins_password
+  ignore_errors: yes
+  retries: 5
+  delay: 10
+
+- name: Print Jenkins initial password
+  debug:
+    msg: "Jenkins initial password: {{ jenkins_password.stdout }}"

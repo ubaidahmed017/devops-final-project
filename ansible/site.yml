@@ -1,0 +1,23 @@
+---
+- name: Configure DevOps Server
+  hosts: devops_servers
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - docker
+    - kubernetes
+    - jenkins
+
+  post_tasks:
+    - name: Print completion message
+      debug:
+        msg: |
+          ========================================
+          DevOps Server Configuration Complete!
+          ========================================
+          Server: {{ inventory_hostname }}
+          Docker: Installed
+          Kubernetes tools: Installed
+          Jenkins: Installed and running
+          ========================================

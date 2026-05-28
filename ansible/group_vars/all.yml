@@ -1,0 +1,6 @@
+---
+ansible_user: ubuntu
+ansible_python_interpreter: /usr/bin/python3
+
+project_name: devops-final
+docker_compose_version: "2"
