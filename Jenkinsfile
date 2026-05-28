@@ -97,15 +97,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    rm -rf /tmp/devops-deploy
-                    git clone https://github.com/ubaidahmed017/devops-final-project.git /tmp/devops-deploy
-                    cd /tmp/devops-deploy
+                    docker network create app-network || true
                     docker stop frontend backend mongo || true
                     docker rm frontend backend mongo || true
                     docker run -d --name mongo \
                         --network app-network \
                         -v mongo-data:/data/db \
-                        mongo:6 || true
+                        mongo:6
+                    sleep 5
                     docker run -d --name backend \
                         --network app-network \
                         -p 3000:3000 \
@@ -115,7 +114,6 @@ pipeline {
                         --network app-network \
                         -p 80:80 \
                         ${FRONTEND_IMAGE}:latest
-                    docker network create app-network || true
                     echo "=== Deployment complete ==="
                     docker ps | grep -E "frontend|backend|mongo"
                 '''
