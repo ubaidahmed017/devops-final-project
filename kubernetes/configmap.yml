@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: devops-app
+data:
+  MONGO_URI: "mongodb://mongo-service:27017/devopsdb"
+  APP_PORT: "3000"
+  NODE_ENV: "production"
