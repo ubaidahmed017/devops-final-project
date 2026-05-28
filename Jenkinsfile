@@ -100,10 +100,24 @@ pipeline {
                     rm -rf /tmp/devops-deploy
                     git clone https://github.com/ubaidahmed017/devops-final-project.git /tmp/devops-deploy
                     cd /tmp/devops-deploy
-                    docker compose down || true
-                    docker compose pull
-                    docker compose up -d
-                    docker compose ps
+                    docker stop frontend backend mongo || true
+                    docker rm frontend backend mongo || true
+                    docker run -d --name mongo \
+                        --network app-network \
+                        -v mongo-data:/data/db \
+                        mongo:6 || true
+                    docker run -d --name backend \
+                        --network app-network \
+                        -p 3000:3000 \
+                        -e MONGO_URI=mongodb://mongo:27017/devopsdb \
+                        ${BACKEND_IMAGE}:latest
+                    docker run -d --name frontend \
+                        --network app-network \
+                        -p 80:80 \
+                        ${FRONTEND_IMAGE}:latest
+                    docker network create app-network || true
+                    echo "=== Deployment complete ==="
+                    docker ps | grep -E "frontend|backend|mongo"
                 '''
             }
         }
